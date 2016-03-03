@@ -3,10 +3,12 @@ import argparse
 import os
 from datetime import datetime
 from pos_concat_cnn import POSConcatCNN
+from base_cnn import BaseCNN
 from logger import Logger
 import cPickle
 import numpy as np
 from random import shuffle
+import sys
 
 
 def main():
@@ -39,6 +41,8 @@ def main():
                         help='Log placement of ops on devices')
     parser.add_argument('--save_dir', type=str, default='runs',
                        help='directory to store checkpointed models')
+    parser.add_argument('--model', type=str, default='base_cnn',
+                       help='which model to run')
 
     args = parser.parse_args()
 
@@ -83,7 +87,13 @@ def initiate(args):
     logger.write("Number of Classes: {:d}\n".format(args.num_classes))
 
     # construct a model
-    model = POSConcatCNN(args)
+    if args.model == 'pos_concat_cnn':
+        model = POSConcatCNN(args)
+    elif args.model == 'base_cnn':
+        model = BaseCNN(args)
+    else:
+        logger.write("invalid model name")
+        sys.exit()
 
     # for train summary
     grad_summaries = []
