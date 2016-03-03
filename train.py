@@ -77,6 +77,7 @@ def initiate(args):
 
     # report
     logger.write("Vocabulary Size: {:d}".format(args.vocab_size))
+    logger.write("Number of sentences: {:d}".format(len(revs)))
     logger.write("POS Vocabulary Size: {:d}".format(args.pos_vocab_size))
     logger.write("Sequence Length (with padding): {:d}".format(args.seq_length))
     logger.write("Number of Classes: {:d}\n".format(args.num_classes))
@@ -153,18 +154,10 @@ def initiate(args):
                 x_train_total.append(zip(text_tokens, tag_tokens))
                 y_train_total.append(label)
 
-        # convert to np array
-        # x_train_total, y_train_total = np.array(x_train_total), np.array(y_train_total)
-        # x_test_total, y_test_total = np.array(x_test_total), np.array(y_test_total)
-        # x_val_total, y_val_total = np.array(x_val_total), np.array(y_val_total)
-
         # shuffle trainset
         x_y_train = zip(x_train_total, y_train_total)
         shuffle(x_y_train)
         x_train_total, y_train_total = list(zip(*x_y_train)[0]), list(zip(*x_y_train)[1])
-        # shuffle_indices = np.random.permutation(np.arange(len(x_train_total)))
-        # x_train_total = x_train_total[shuffle_indices]
-        # y_train_total = y_train_total[shuffle_indices]
 
         # split trainset into trainset and valset
         val_size = int(len(x_train_total) * 0.1)
