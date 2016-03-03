@@ -1,6 +1,5 @@
 import re
 import numpy as np
-import sys
 import cPickle
 from nltk.tag import StanfordPOSTagger
 
@@ -8,21 +7,13 @@ from nltk.tag import StanfordPOSTagger
 PAD_WORD = '\PAD'
 
 
-def get_pos_emb_vocab(fpath, pos_vocab):  # TODO: need pre-trained vals !!
-    emb_pos_vocab = {}
-    emb_dim = 8
-    for (tag, idx) in pos_vocab.iteritems():
-        if tag not in emb_pos_vocab:
-            emb_pos_vocab[tag] = (idx, [np.random.ranf() * 0.5 - 0.25] * emb_dim)
-    return emb_pos_vocab
-
-
-def get_word_emb_vocab(fpath, vocab):
+def get_emb_vocab(fpath, vocab):
     with open(fpath, "rb") as f:
         emb_vocab = {}
         hdr = f.readline()
         emb_vocab_size, emb_dim = map(int, hdr.split())
         binary_len = np.dtype('float32').itemsize * emb_dim
+        num_pretrained = 0
 
         # add word predefined word vectors
         for line in xrange(emb_vocab_size):
@@ -36,6 +27,7 @@ def get_word_emb_vocab(fpath, vocab):
                     word.append(ch)
             emb_vec = list(np.fromstring(f.read(binary_len), dtype='float32'))
             if word in vocab:
+                num_pretrained += 1
                 emb_vocab[word] = (vocab[word], emb_vec)
 
         # add unknown words
@@ -43,6 +35,7 @@ def get_word_emb_vocab(fpath, vocab):
             if word not in emb_vocab:
                 emb_vocab[word] = (idx, [np.random.ranf() * 0.5 - 0.25] * emb_dim)
 
+        print '{} entries found in a pretrained set !!'.format(num_pretrained)
         return emb_vocab
 
 
@@ -137,20 +130,20 @@ def pad_revs(revs, max_len, extra_pad=4):
 
 if __name__ == '__main__':
     print "reading mr dataset ..."
-    if len(sys.argv) < 2:
-        w2v_bin_path = 'GoogleNews-vectors-negative300.bin'
-    else:
-        w2v_bin_path = sys.argv[1]
+    w2v_bin_path = 'GoogleNews-vectors-negative300.bin'
+    pos_bin_path = '1billion-pos.bin'
     num_folds = 10  # 10-fold
     revs, vocab, pos_vocab, max_len = read_mr_data(num_folds)
     pad_revs(revs, max_len)
     print "data loaded!"
     print "number of sentences: " + str(len(revs))
     print "vocab size: " + str(len(vocab))
+    print "pos vocab size: " + str(len(pos_vocab))
     print "max sentence length: " + str(max_len)
-    print "loading pre-trained embedding vectors..."
-    emb_vocab = get_word_emb_vocab(w2v_bin_path, vocab)
-    emb_pos_vocab =get_pos_emb_vocab('', pos_vocab)  # TODO: need pre-trained vec file !!!
+    print "loading pre-trained word embedding vectors..."
+    emb_vocab = get_emb_vocab(w2v_bin_path, vocab)
+    print "loading pre-trained pos embedding vectors..."
+    emb_pos_vocab = get_emb_vocab(pos_bin_path, pos_vocab)
     print "embeddings loaded!"
     cPickle.dump([revs, emb_vocab, emb_pos_vocab, num_folds], open("mr_data", "wb"))
     print "mr dataset created!"
