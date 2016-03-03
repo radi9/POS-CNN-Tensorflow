@@ -176,9 +176,10 @@ def initiate(args):
         logger.write("Starting session...")
         train_summary_writer = tf.train.SummaryWriter(train_summary_dir, sess.graph_def)
         current_step = 0
-        max_val_acc, max_test_acc = 0.0, 0.0
+        max_test_acc_list = []
 
         for fold in range(num_folds):  # for each fold
+            max_val_acc, max_test_acc = 0.0, 0.0
             tf.initialize_all_variables().run()  # initialize the model
             x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total = \
                 split_mr_data(revs, args.vocab, args.pos_vocab, fold)
@@ -211,9 +212,16 @@ def initiate(args):
                 max_test_acc = test_acc if val_acc > max_val_acc else max_test_acc
                 max_val_acc = max(max_val_acc, val_acc)
 
+            logger.write("----------------------------------------------------------------------------")
+            logger.write("K={} MAX TEST ACCURACY {:g}".format(fold, max_test_acc))
+            logger.write("----------------------------------------------------------------------------")
+            max_test_acc_list.append(max_test_acc)
+
         logger.write("----------------------------------------------------------------------------")
-        logger.write("FINAL ACCURACY {:g}".format(max_test_acc))
+        logger.write("K-FOLD FINAL MEAN ACCURACY {:g}".format(np.mean(max_test_acc_list)))
         logger.write("----------------------------------------------------------------------------")
+
+
 
 
 if __name__ == '__main__':
