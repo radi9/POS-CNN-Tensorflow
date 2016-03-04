@@ -16,15 +16,15 @@ import sys
 ####################
 
 
-def split_data(dataset, revs, vocab, pos_vocab, test_fold=-1):
+def split_data(dataset, revs, vocab, pos_vocab, test_fold, args):
     if dataset == 'mr':
-        return split_mr_data(revs, vocab, pos_vocab, test_fold)
+        return split_mr_data(revs, vocab, pos_vocab, test_fold, args)
     elif dataset == 'sstb':
-        return split_sstb_data(revs, vocab, pos_vocab)
+        return split_sstb_data(revs, vocab, pos_vocab, args)
     return None
 
 
-def split_mr_data(revs, vocab, pos_vocab, test_fold):
+def split_mr_data(revs, vocab, pos_vocab, test_fold, args):
     # split train and test
     x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total = [], [], [], [], [], []
     for rev in revs:
@@ -41,7 +41,7 @@ def split_mr_data(revs, vocab, pos_vocab, test_fold):
 
     # shuffle trainset
     x_y_train = zip(x_train_total, y_train_total)
-    shuffle(x_y_train)
+    shuffle(x_y_train, args.seed)
     x_train_total, y_train_total = list(zip(*x_y_train)[0]), list(zip(*x_y_train)[1])
 
     # split trainset into trainset and valset
@@ -52,7 +52,7 @@ def split_mr_data(revs, vocab, pos_vocab, test_fold):
     return x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total
 
 
-def split_sstb_data(revs, vocab, pos_vocab):
+def split_sstb_data(revs, vocab, pos_vocab, args):
     x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total = [], [], [], [], [], []
     for rev in revs:
         text_tokens, tag_tokens, label, fold_num = \
@@ -71,7 +71,7 @@ def split_sstb_data(revs, vocab, pos_vocab):
 
     # shuffle trainset
     x_y_train = zip(x_train_total, y_train_total)
-    shuffle(x_y_train)
+    shuffle(x_y_train, args.seed)
     x_train_total, y_train_total = list(zip(*x_y_train)[0]), list(zip(*x_y_train)[1])
     return x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total
 
@@ -95,6 +95,8 @@ def main():
                         help='L2 regularizaion lambda')
     parser.add_argument('--l2_limit', type=float, default=3.0,
                         help='L2 norm limit')
+    parser.add_argument('--bias', type=float, default=0.01,
+                       help='bias initial value for conv, output layer')
 
     # training parameters
     parser.add_argument('--batch_size', type=int, default=50,
@@ -115,6 +117,8 @@ def main():
                        help='which model to run')
     parser.add_argument('--dataset', type=str, default='sstb',
                        help='which dataset to use')
+    parser.add_argument('--seed', type=int, default=7777,
+                       help='seed for randomness')
 
     args = parser.parse_args()
 
@@ -244,7 +248,7 @@ def initiate(args):
 
             # get split dataset
             x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total = \
-                split_data(args.dataset, revs, args.vocab, args.pos_vocab, fold)
+                split_data(args.dataset, revs, args.vocab, args.pos_vocab, fold, args)
             logger.write("Train/Val/Test Split: {:d}/{:d}/{:d}"
                  .format(len(x_train_total), len(x_val_total), len(x_test_total)))
 
@@ -283,12 +287,12 @@ def initiate(args):
                 max_val_acc = max(max_val_acc, val_acc)
 
             logger.write("----------------------------------------------------------------------------")
-            logger.write("K={} MAX TEST ACCURACY {:g}".format(fold, max_test_acc))
+            logger.write("K={} BEST TEST ACCURACY {:g}".format(fold, max_test_acc))
             logger.write("----------------------------------------------------------------------------")
             max_test_acc_list.append(max_test_acc)
 
         logger.write("----------------------------------------------------------------------------")
-        logger.write("K-FOLD FINAL MEAN ACCURACY {:g}".format(np.mean(max_test_acc_list)))
+        logger.write("FINAL MEAN ACCURACY {:g}".format(np.mean(max_test_acc_list)))
         logger.write("----------------------------------------------------------------------------")
 
 

@@ -146,7 +146,7 @@ def pad_revs(revs, max_len, extra_pad=4):
 if __name__ == '__main__':
     print "reading sstb dataset ..."
     w2v_bin_path = 'GoogleNews-vectors-negative300.bin'
-    pos_bin_path = '1billion-pos-48.bin'
+    pos_bin_path = '1billion-pos-24.bin'
     num_folds = 1  # sstb doesn't need k-fold cv
     revs, vocab, pos_vocab, max_len = read_sstb_data()
     pad_revs(revs, max_len)

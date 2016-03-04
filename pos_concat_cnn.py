@@ -17,7 +17,7 @@ class POSConcatCNN(object):
         with tf.name_scope("word-embedding"):
             # make an embedding matrix
             emb_dim = len(args.vocab[args.vocab.keys()[0]][1])
-            emb_mat = np.random.rand(args.vocab_size, emb_dim)
+            emb_mat = np.random.rand(args.vocab_size, emb_dim) * 0.1  # scale down to [0, 0.1]
             for word, (idx, emb_vec) in args.vocab.iteritems():
                 emb_mat[idx] = emb_vec
             # make a word embedding variable
@@ -27,7 +27,7 @@ class POSConcatCNN(object):
         # pos embedding layer
         with tf.name_scope("pos-embedding"):
             pos_emb_dim = len(args.pos_vocab[args.pos_vocab.keys()[0]][1])
-            pos_emb_mat = np.random.rand(args.pos_vocab_size, pos_emb_dim)
+            pos_emb_mat = np.random.rand(args.pos_vocab_size, pos_emb_dim) * 0.1  # scale down to [0, 0.1]
             for tag, (idx, pos_emb_vec) in args.pos_vocab.iteritems():
                 pos_emb_mat[idx] = pos_emb_vec
             W_pos = tf.Variable(tf.convert_to_tensor(pos_emb_mat, dtype=tf.float32), name="W_pos")
@@ -46,8 +46,8 @@ class POSConcatCNN(object):
             with tf.name_scope("conv-maxpool-%s" % filter_size):
                 # convolution
                 filter_shape = [filter_size, concat_dim, 1, args.num_filters]
-                W = tf.Variable(tf.random_uniform(filter_shape, -0.01, 0.01), name="W")
-                b = tf.Variable(tf.constant(0.0, shape=[args.num_filters]), name="b")
+                W = tf.Variable(tf.random_uniform(filter_shape, -0.01, 0.01, seed=args.seed), name="W")
+                b = tf.Variable(tf.constant(args.bias, shape=[args.num_filters]), name="b")
                 conv = tf.nn.conv2d(
                     self.embedded_concat,
                     W,
@@ -75,12 +75,13 @@ class POSConcatCNN(object):
         # dropout layer
         with tf.name_scope("dropout"):
             self.h_drop = tf.nn.dropout(self.h_pool_flat, self.dropout_keep_prob)
+            # TODO: implement custom dropout
 
         # output layer (fully-connected layer included)
         with tf.name_scope("output"):
-            W = tf.Variable(tf.constant(0.0, shape=[num_filters_total, args.num_classes]), name="W")
-
-            b = tf.Variable(tf.constant(0.0, shape=[args.num_classes]), name="b")
+            filter_shape_out = [num_filters_total, args.num_classes]
+            W = tf.Variable(tf.random_uniform(filter_shape_out, -0.01, 0.01, seed=args.seed), name="W")
+            b = tf.Variable(tf.constant(args.bias, shape=[args.num_classes]), name="b")
             l2_loss += tf.nn.l2_loss(W)
             l2_loss += tf.nn.l2_loss(b)
             self.logits = tf.nn.xw_plus_b(self.h_drop, W, b, name="logits")
@@ -96,6 +97,7 @@ class POSConcatCNN(object):
         with tf.name_scope("loss"):
             losses = tf.nn.softmax_cross_entropy_with_logits(self.logits, self.input_y)
             self.loss = tf.reduce_mean(losses) + args.l2_reg_lambda * l2_loss
+            # TODO: calculate the mean neg log likelihood instead
 
         # train and update
         with tf.name_scope("update"):

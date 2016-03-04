@@ -131,7 +131,7 @@ def pad_revs(revs, max_len, extra_pad=4):
 if __name__ == '__main__':
     print "reading mr dataset ..."
     w2v_bin_path = 'GoogleNews-vectors-negative300.bin'
-    pos_bin_path = '1billion-pos-48.bin'
+    pos_bin_path = '1billion-pos-24.bin'
     num_folds = 10  # 10-fold
     revs, vocab, pos_vocab, max_len = read_mr_data(num_folds)
     pad_revs(revs, max_len)
