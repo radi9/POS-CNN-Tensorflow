@@ -46,7 +46,7 @@ class POSConcatCNN(object):
             with tf.name_scope("conv-maxpool-%s" % filter_size):
                 # convolution
                 filter_shape = [filter_size, concat_dim, 1, args.num_filters]
-                W = tf.Variable(tf.random_uniform(filter_size, -0.01, 0.01), name="W")
+                W = tf.Variable(tf.random_uniform(filter_shape, -0.01, 0.01), name="W")
                 b = tf.Variable(tf.constant(0.0, shape=[args.num_filters]), name="b")
                 conv = tf.nn.conv2d(
                     self.embedded_concat,
