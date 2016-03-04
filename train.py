@@ -11,6 +11,76 @@ from random import shuffle
 import sys
 
 
+####################
+# HELPER FUNCTIONS #
+####################
+
+
+def split_data(dataset, revs, vocab, pos_vocab, test_fold=-1):
+    if dataset == 'mr':
+        return split_mr_data(revs, vocab, pos_vocab, test_fold)
+    elif dataset == 'sstb':
+        return split_sstb_data(revs, vocab, pos_vocab)
+    return None
+
+
+def split_mr_data(revs, vocab, pos_vocab, test_fold):
+    # split train and test
+    x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total = [], [], [], [], [], []
+    for rev in revs:
+        text_tokens, tag_tokens, label, fold_num = \
+            rev['text_tokens'], rev['tag_tokens'], rev['label'], rev['fold_num']
+        text_tokens = [vocab[token][0] for token in text_tokens]
+        tag_tokens = [pos_vocab[tag][0] for tag in tag_tokens]
+        if fold_num == test_fold:
+            x_test_total.append(zip(text_tokens, tag_tokens))
+            y_test_total.append(label)
+        else:
+            x_train_total.append(zip(text_tokens, tag_tokens))
+            y_train_total.append(label)
+
+    # shuffle trainset
+    x_y_train = zip(x_train_total, y_train_total)
+    shuffle(x_y_train)
+    x_train_total, y_train_total = list(zip(*x_y_train)[0]), list(zip(*x_y_train)[1])
+
+    # split trainset into trainset and valset
+    val_size = int(len(x_train_total) * 0.1)
+    x_val_total, y_val_total = x_train_total[:val_size], y_train_total[:val_size]
+    x_train_total, y_train_total = x_train_total[val_size:], y_train_total[val_size:]
+
+    return x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total
+
+
+def split_sstb_data(revs, vocab, pos_vocab):
+    x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total = [], [], [], [], [], []
+    for rev in revs:
+        text_tokens, tag_tokens, label, fold_num = \
+            rev['text_tokens'], rev['tag_tokens'], rev['label'], rev['fold_num']
+        text_tokens = [vocab[token][0] for token in text_tokens]
+        tag_tokens = [pos_vocab[tag][0] for tag in tag_tokens]
+        if fold_num == 0:
+            x_train_total.append(zip(text_tokens, tag_tokens))
+            y_train_total.append(label)
+        elif fold_num == 1:
+            x_test_total.append(zip(text_tokens, tag_tokens))
+            y_test_total.append(label)
+        elif fold_num == 2:
+            x_val_total.append(zip(text_tokens, tag_tokens))
+            y_val_total.append(label)
+
+    # shuffle trainset
+    x_y_train = zip(x_train_total, y_train_total)
+    shuffle(x_y_train)
+    x_train_total, y_train_total = list(zip(*x_y_train)[0]), list(zip(*x_y_train)[1])
+    return x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total
+
+
+##################
+# MAIN FUNCTIONS #
+##################
+
+
 def main():
     parser = argparse.ArgumentParser()
 
@@ -41,8 +111,10 @@ def main():
                         help='Log placement of ops on devices')
     parser.add_argument('--save_dir', type=str, default='runs',
                        help='directory to store checkpointed models')
-    parser.add_argument('--model', type=str, default='base_cnn',
+    parser.add_argument('--model', type=str, default='pos_concat_cnn',
                        help='which model to run')
+    parser.add_argument('--dataset', type=str, default='sstb',
+                       help='which dataset to use')
 
     args = parser.parse_args()
 
@@ -62,7 +134,6 @@ def initiate(args):
     logger = Logger(log_file_path)
 
     # report parameters
-    logger.write("POS EMBEDDING\n")
     logger.write("Parameters:")
     for arg in args.__dict__:
         logger.write("{}={}".format(arg.upper(), args.__dict__[arg]))
@@ -70,7 +141,14 @@ def initiate(args):
 
     # load data and fill args
     logger.write("Loading data...")
-    revs, word_vocab, pos_vocab, num_folds = cPickle.load(open("mr_data", "rb"))
+    if args.dataset == 'mr':
+        revs, word_vocab, pos_vocab, num_folds = cPickle.load(open("mr_data", "rb"))
+    elif args.dataset == 'sstb':
+        revs, word_vocab, pos_vocab, num_folds = cPickle.load(open("sstb_data", "rb"))
+    else:
+        logger.write("invalid dataset !!")
+        sys.exit()
+
     args.vocab_size = len(word_vocab)
     args.pos_vocab_size = len(pos_vocab)
     args.seq_length = len(revs[0]['text_tokens'])
@@ -149,34 +227,6 @@ def initiate(args):
                 feed_dict)
         return accuracy, loss
 
-    def split_mr_data(revs, vocab, pos_vocab, test_fold):
-        # split train and test
-        x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total = [], [], [], [], [], []
-        for rev in revs:
-            text_tokens, tag_tokens, label, fold_num = \
-                rev['text_tokens'], rev['tag_tokens'], rev['label'], rev['fold_num']
-            text_tokens = [vocab[token][0] for token in text_tokens]
-            tag_tokens = [pos_vocab[tag][0] for tag in tag_tokens]
-            if fold_num == test_fold:
-                x_test_total.append(zip(text_tokens, tag_tokens))
-                y_test_total.append(label)
-            else:
-                x_train_total.append(zip(text_tokens, tag_tokens))
-                y_train_total.append(label)
-
-        # shuffle trainset
-        x_y_train = zip(x_train_total, y_train_total)
-        shuffle(x_y_train)
-        x_train_total, y_train_total = list(zip(*x_y_train)[0]), list(zip(*x_y_train)[1])
-
-        # split trainset into trainset and valset
-        val_size = int(len(x_train_total) * 0.1)
-        x_val_total, y_val_total = x_train_total[:val_size], y_train_total[:val_size]
-        x_train_total, y_train_total = x_train_total[val_size:], y_train_total[val_size:]
-
-        return x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total
-
-
     # start a session
     sess_conf = tf.ConfigProto(
             allow_soft_placement=args.allow_soft_placement, log_device_placement=args.log_device_placement)
@@ -191,8 +241,13 @@ def initiate(args):
         for fold in range(num_folds):  # for each fold
             max_val_acc, max_test_acc = 0.0, 0.0
             tf.initialize_all_variables().run()  # initialize the model
+
+            # get split dataset
             x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total = \
-                split_mr_data(revs, args.vocab, args.pos_vocab, fold)
+                split_data(args.dataset, revs, args.vocab, args.pos_vocab, fold)
+            logger.write("Train/Val/Test Split: {:d}/{:d}/{:d}"
+                 .format(len(x_train_total), len(x_val_total), len(x_test_total)))
+
             num_batches = len(x_train_total) / args.batch_size + 1
 
             for epoch_num in range(args.num_epochs):  # for each epoch
@@ -206,16 +261,21 @@ def initiate(args):
                     x_tag_batch = [list(zip(*text)[1]) for text in x_batch]
                     train_model(x_text_batch, x_tag_batch, y_batch, args.dropout_keep_prob, train_summary_writer)
 
-                # evaluate with valset
-                val_acc, val_loss = evaluate_model([list(zip(*x)[0]) for x in x_val_total],
-                                                   [list(zip(*x)[1]) for x in x_val_total], y_val_total)
                 curr_step = tf.train.global_step(sess, model.global_step)
                 logger.write("\nEvaluate K={} EPOCH={} STEP={}:".format(fold, epoch_num, curr_step))
-                logger.write("VAL - loss {:g}, acc {:g}".format(val_loss, val_acc))
+
+                # evaluate with valset
+                if len(x_val_total) > 0:
+                    val_acc, val_loss = evaluate_model([list(zip(*x)[0]) for x in x_val_total],
+                                                       [list(zip(*x)[1]) for x in x_val_total], y_val_total)
+                    logger.write("VAL - loss {:g}, acc {:g}".format(val_loss, val_acc))
+
                 # evaluate with testset
-                test_acc, test_loss = evaluate_model([list(zip(*x)[0]) for x in x_test_total],
-                                                     [list(zip(*x)[1]) for x in x_test_total], y_test_total)
-                logger.write("TEST - loss {:g}, acc {:g}".format(test_loss, test_acc))
+                if len(x_test_total) > 0:
+                    test_acc, test_loss = evaluate_model([list(zip(*x)[0]) for x in x_test_total],
+                                                         [list(zip(*x)[1]) for x in x_test_total], y_test_total)
+                    logger.write("TEST - loss {:g}, acc {:g}".format(test_loss, test_acc))
+
                 # save the model
                 saver.save(sess, checkpoint_prefix, global_step=current_step)
                 # update the result
