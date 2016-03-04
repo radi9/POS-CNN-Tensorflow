@@ -144,7 +144,7 @@ def pad_revs(revs, max_len, extra_pad=4):
 
 
 if __name__ == '__main__':
-    print "reading mr dataset ..."
+    print "reading sstb dataset ..."
     w2v_bin_path = 'GoogleNews-vectors-negative300.bin'
     pos_bin_path = '1billion-pos-48.bin'
     num_folds = 1  # sstb doesn't need k-fold cv
@@ -161,4 +161,4 @@ if __name__ == '__main__':
     emb_pos_vocab = get_emb_vocab(pos_bin_path, pos_vocab)
     print "embeddings loaded!"
     cPickle.dump([revs, emb_vocab, emb_pos_vocab, num_folds], open("sstb_data", "wb"))
-    print "mr dataset created!"
+    print "sstb dataset created!"
