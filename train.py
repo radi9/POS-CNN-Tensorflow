@@ -41,7 +41,7 @@ def split_mr_data(revs, vocab, pos_vocab, test_fold, args):
 
     # shuffle trainset
     x_y_train = zip(x_train_total, y_train_total)
-    shuffle(x_y_train, args.seed)
+    shuffle(x_y_train)
     x_train_total, y_train_total = list(zip(*x_y_train)[0]), list(zip(*x_y_train)[1])
 
     # split trainset into trainset and valset
@@ -71,7 +71,7 @@ def split_sstb_data(revs, vocab, pos_vocab, args):
 
     # shuffle trainset
     x_y_train = zip(x_train_total, y_train_total)
-    shuffle(x_y_train, args.seed)
+    shuffle(x_y_train)
     x_train_total, y_train_total = list(zip(*x_y_train)[0]), list(zip(*x_y_train)[1])
     return x_train_total, y_train_total, x_val_total, y_val_total, x_test_total, y_test_total
 
