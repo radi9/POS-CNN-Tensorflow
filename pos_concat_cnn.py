@@ -46,8 +46,8 @@ class POSConcatCNN(object):
             with tf.name_scope("conv-maxpool-%s" % filter_size):
                 # convolution
                 filter_shape = [filter_size, concat_dim, 1, args.num_filters]
-                W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
-                b = tf.Variable(tf.constant(0.1, shape=[args.num_filters]), name="b")
+                W = tf.Variable(tf.random_uniform(filter_size, -0.01, 0.01), name="W")
+                b = tf.Variable(tf.constant(0.0, shape=[args.num_filters]), name="b")
                 conv = tf.nn.conv2d(
                     self.embedded_concat,
                     W,
@@ -78,8 +78,9 @@ class POSConcatCNN(object):
 
         # output layer (fully-connected layer included)
         with tf.name_scope("output"):
-            W = tf.Variable(tf.truncated_normal([num_filters_total, args.num_classes], stddev=0.1), name="W")
-            b = tf.Variable(tf.constant(0.1, shape=[args.num_classes]), name="b")
+            W = tf.Variable(tf.constant(0.0, shape=[num_filters_total, args.num_classes]), name="W")
+
+            b = tf.Variable(tf.constant(0.0, shape=[args.num_classes]), name="b")
             l2_loss += tf.nn.l2_loss(W)
             l2_loss += tf.nn.l2_loss(b)
             self.logits = tf.nn.xw_plus_b(self.h_drop, W, b, name="logits")
