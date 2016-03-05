@@ -95,7 +95,7 @@ def main():
                         help='L2 regularizaion lambda')
     parser.add_argument('--l2_limit', type=float, default=3.0,
                         help='L2 norm limit')
-    parser.add_argument('--bias', type=float, default=0.01,
+    parser.add_argument('--bias', type=float, default=0.1,
                        help='bias initial value for conv, output layer')
 
     # training parameters

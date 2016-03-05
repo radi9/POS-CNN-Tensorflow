@@ -17,7 +17,7 @@ class POSConcatCNN(object):
         with tf.name_scope("word-embedding"):
             # make an embedding matrix
             emb_dim = len(args.vocab[args.vocab.keys()[0]][1])
-            emb_mat = np.random.rand(args.vocab_size, emb_dim) * 0.1  # scale down to [0, 0.1]
+            emb_mat = np.random.rand(args.vocab_size, emb_dim)
             for word, (idx, emb_vec) in args.vocab.iteritems():
                 emb_mat[idx] = emb_vec
             # make a word embedding variable
@@ -27,7 +27,7 @@ class POSConcatCNN(object):
         # pos embedding layer
         with tf.name_scope("pos-embedding"):
             pos_emb_dim = len(args.pos_vocab[args.pos_vocab.keys()[0]][1])
-            pos_emb_mat = np.random.rand(args.pos_vocab_size, pos_emb_dim) * 0.1  # scale down to [0, 0.1]
+            pos_emb_mat = np.random.rand(args.pos_vocab_size, pos_emb_dim)
             for tag, (idx, pos_emb_vec) in args.pos_vocab.iteritems():
                 pos_emb_mat[idx] = pos_emb_vec
             W_pos = tf.Variable(tf.convert_to_tensor(pos_emb_mat, dtype=tf.float32), name="W_pos")
