@@ -8,6 +8,13 @@ import csv
 PAD_WORD = '\PAD'
 
 
+def get_random_emb_vocab(vocab, emb_dim):
+    rand_vocab = {}
+    for (word, idx) in vocab.iteritems():
+        rand_vocab[word] = (idx, [np.random.ranf() * 0.5 - 0.25] * emb_dim)
+    return rand_vocab
+
+
 def get_emb_vocab(fpath, vocab):
     with open(fpath, "rb") as f:
         emb_vocab = {}
@@ -158,7 +165,8 @@ if __name__ == '__main__':
     print "loading pre-trained word embedding vectors..."
     emb_vocab = get_emb_vocab(w2v_bin_path, vocab)
     print "loading pre-trained pos embedding vectors..."
-    emb_pos_vocab = get_emb_vocab(pos_bin_path, pos_vocab)
+    # emb_pos_vocab = get_emb_vocab(pos_bin_path, pos_vocab)
+    emb_pos_vocab = get_random_emb_vocab(pos_vocab, 24)
     print "embeddings loaded!"
     cPickle.dump([revs, emb_vocab, emb_pos_vocab, num_folds], open("sstb_data", "wb"))
     print "sstb dataset created!"
